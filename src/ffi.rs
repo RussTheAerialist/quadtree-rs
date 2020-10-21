@@ -28,9 +28,7 @@ pub unsafe extern "C" fn quadtree_insert_point(
     }
 
     let qt = &mut *qt;
-    qt.insert_point(&Point { x, y, data })
-        .map(|_| 0)
-        .unwrap_or(-2)
+    qt.insert(&Point { x, y, data }).map(|_| 0).unwrap_or(-2)
 }
 
 #[cfg(test)]

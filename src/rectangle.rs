@@ -16,25 +16,25 @@ impl Rectangle {
 
 impl Rectangle {
     pub fn contains(self, point: &Point) -> bool {
-				!(point.x <= self.x - self.w ||
-				 point.x > self.x + self.w ||
-				 point.y <= self.y - self.h ||
-				 point.y > self.y + self.h)
+        !(point.x <= self.x - self.w
+            || point.x > self.x + self.w
+            || point.y <= self.y - self.h
+            || point.y > self.y + self.h)
     }
 }
 
 #[cfg(test)]
 mod tests {
-		use super::*;
+    use super::*;
 
-		#[test]
-		fn test_contains() {
-				let rect = Rectangle::new(0., 0., 50., 50.);
-				assert!(rect.contains(&Point::new(10., 10.)));
-				assert!(rect.contains(&Point::new(-10., -10.)));
-				assert!(!rect.contains(&Point::new(100., 0.)));
-				assert!(!rect.contains(&Point::new(0., 100.)));
-				assert!(!rect.contains(&Point::new(100., 100.)));
-				assert!(!rect.contains(&Point::new(-100., 100.)));
-		}
+    #[test]
+    fn test_contains() {
+        let rect = Rectangle::new(0., 0., 50., 50.);
+        assert!(rect.contains(&Point::new(10., 10.)));
+        assert!(rect.contains(&Point::new(-10., -10.)));
+        assert!(!rect.contains(&Point::new(100., 0.)));
+        assert!(!rect.contains(&Point::new(0., 100.)));
+        assert!(!rect.contains(&Point::new(100., 100.)));
+        assert!(!rect.contains(&Point::new(-100., 100.)));
+    }
 }
