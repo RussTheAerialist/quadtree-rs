@@ -127,4 +127,15 @@ mod tests {
         assert_eq!(result.len(), 1);
         assert_eq!(result[0], point);
     }
+
+    #[test]
+    fn test_query_outside_radius() {
+        let mut qt = Quadtree::new(&Rectangle::new(10., 10., 10., 10.));
+        let point = Point::new(5., 5.);
+        qt.insert(&point).expect("Could not insert point");
+        qt.insert(&Point::new(10., 20.))
+            .expect("Unable to insert second point");
+        let result = qt.query(&Point::new(1., .1), 2.);
+        assert_eq!(result.len(), 0);
+    }
 }
