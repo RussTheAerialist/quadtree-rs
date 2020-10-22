@@ -1,0 +1,14 @@
+language = "C++"
+
+pragma_once = true
+include_version = true # maybe false?
+namespace = "quadtree"
+
+braces = "SameLine"
+line_length = 120
+tab_width = 2
+documentation_style = "auto" # what is this?
+line_endings = "LF"
+
+[export]
+item_types = [ "structs", "opaque", "functions" ]

@@ -1,5 +1,5 @@
 use super::*;
-use std::os::raw::c_int;
+use std::os::raw::{c_int, c_void};
 
 #[repr(C)]
 pub struct UserData {
@@ -7,11 +7,17 @@ pub struct UserData {
 }
 
 #[no_mangle]
-pub extern "C" fn new_quadtree() -> *mut Quadtree {
+pub extern "C" fn quadtree_new() -> *mut Quadtree {
     let obj = Quadtree::new(&Rectangle::new(10., 10., 10., 10.));
     let boxed = Box::new(obj);
 
     Box::into_raw(boxed)
+}
+
+#[no_mangle]
+/// # Safety
+pub unsafe extern "C" fn quadtree_free(qt: *mut Quadtree) {
+    let _ = Box::from_raw(qt);
 }
 
 #[no_mangle]
@@ -31,16 +37,46 @@ pub unsafe extern "C" fn quadtree_insert_point(
     qt.insert(&Point { x, y, data }).map(|_| 0).unwrap_or(-2)
 }
 
+#[no_mangle]
+/// # Safety
+pub unsafe extern "C" fn quadtree_query(qt: *const Quadtree, x: f32, y: f32, r: f32, count: &mut usize) -> *mut c_void {
+    if qt.is_null() {
+        return std::ptr::null_mut(); // TODO: return empty array
+    }
+
+    let qt = &*qt;
+    let point = Point::new(x, y);
+    let mut points = qt.query(&point, r);
+    points.shrink_to_fit();
+    let ptr = points.as_mut_ptr();
+    *count = points.len();
+
+    std::mem::forget(points);
+
+    ptr as *mut c_void
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn test_c_api() {
-        let qt = new_quadtree();
+        let qt = quadtree_new();
         assert!(!qt.is_null());
 
         let result = unsafe { quadtree_insert_point(qt, 1.0, 2.0, std::ptr::null()) };
         assert_eq!(result, 0);
+        let mut count = 0;
+        let result = unsafe { quadtree_query(qt, 1., 1., 5., &mut count) };
+        assert_eq!(1, count);
+        let result = unsafe { Vec::from_raw_parts(result as *mut Point, count, count) };
+        let value = result[0];
+        assert_eq!(value.x, 1.);
+        assert_eq!(value.y, 2.);
+
+        unsafe {
+            quadtree_free(qt);
+        }
     }
 }
