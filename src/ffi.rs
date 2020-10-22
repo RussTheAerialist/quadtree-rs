@@ -39,21 +39,26 @@ pub unsafe extern "C" fn quadtree_insert_point(
 
 #[no_mangle]
 /// # Safety
-pub unsafe extern "C" fn quadtree_query(qt: *const Quadtree, x: f32, y: f32, r: f32, count: &mut usize) -> *mut c_void {
+pub unsafe extern "C" fn quadtree_query(qt: *const Quadtree, x: f32, y: f32, r: f32, count: &mut usize) -> *const c_void {
     if qt.is_null() {
-        return std::ptr::null_mut(); // TODO: return empty array
+        *count = 0;
+        return std::ptr::null_mut();
     }
 
     let qt = &*qt;
     let point = Point::new(x, y);
-    let mut points = qt.query(&point, r);
+    let mut points : Vec<*const UserData> = qt.query(&point, r)
+        .into_iter()
+        .map(|p| p.data)
+        .collect();
+
     points.shrink_to_fit();
-    let ptr = points.as_mut_ptr();
+    let ptr = points.as_ptr();
     *count = points.len();
 
     std::mem::forget(points);
 
-    ptr as *mut c_void
+    ptr as *const c_void
 }
 
 #[cfg(test)]
@@ -70,10 +75,9 @@ mod tests {
         let mut count = 0;
         let result = unsafe { quadtree_query(qt, 1., 1., 5., &mut count) };
         assert_eq!(1, count);
-        let result = unsafe { Vec::from_raw_parts(result as *mut Point, count, count) };
+        let result = unsafe { Vec::from_raw_parts(result as *mut *const UserData, count, count) };
         let value = result[0];
-        assert_eq!(value.x, 1.);
-        assert_eq!(value.y, 2.);
+        assert!(value.is_null());
 
         unsafe {
             quadtree_free(qt);
