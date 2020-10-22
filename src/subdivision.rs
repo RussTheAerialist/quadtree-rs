@@ -1,6 +1,7 @@
 use super::rectangle::Rectangle;
 use super::Quadtree;
 
+#[derive(Debug)]
 pub struct QuadtreeSubdivisions {
     pub nw: Box<Quadtree>,
     pub ne: Box<Quadtree>,
@@ -9,7 +10,7 @@ pub struct QuadtreeSubdivisions {
 }
 
 impl QuadtreeSubdivisions {
-    pub fn new(boundary: &Rectangle) -> QuadtreeSubdivisions {
+    pub fn new(boundary: &Rectangle, capacity: u8) -> QuadtreeSubdivisions {
         let new_w = boundary.w / 2.;
         let new_h = boundary.h / 2.;
 
@@ -19,10 +20,10 @@ impl QuadtreeSubdivisions {
         let se = Rectangle::new(boundary.x - new_w, boundary.y + new_h, new_w, new_h);
 
         QuadtreeSubdivisions {
-            nw: Box::new(Quadtree::new(&nw)),
-            ne: Box::new(Quadtree::new(&ne)),
-            sw: Box::new(Quadtree::new(&sw)),
-            se: Box::new(Quadtree::new(&se)),
+            nw: Box::new(Quadtree::with_capacity(&nw, capacity)),
+            ne: Box::new(Quadtree::with_capacity(&ne, capacity)),
+            sw: Box::new(Quadtree::with_capacity(&sw, capacity)),
+            se: Box::new(Quadtree::with_capacity(&se, capacity)),
         }
     }
 }
@@ -34,7 +35,7 @@ mod tests {
     #[test]
     fn test_new() {
         let boundary = Rectangle::new(100., 200., 300., 400.);
-        let sd = QuadtreeSubdivisions::new(&boundary);
+        let sd = QuadtreeSubdivisions::new(&boundary, 10u8);
         assert_eq!(sd.sw.boundary, Rectangle::new(250., 400., 150., 200.));
         assert_eq!(sd.se.boundary, Rectangle::new(-50., 400., 150., 200.));
         assert_eq!(sd.nw.boundary, Rectangle::new(250., 0., 150., 200.));

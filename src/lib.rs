@@ -9,6 +9,7 @@ use ffi::UserData;
 use rectangle::Rectangle;
 use subdivision::QuadtreeSubdivisions;
 #[repr(C)]
+#[derive(Debug)]
 pub struct Quadtree {
     pub points: Vec<Point>,
     pub boundary: Rectangle,
@@ -18,34 +19,41 @@ pub struct Quadtree {
 
 impl Quadtree {
     pub fn new(boundary: &Rectangle) -> Quadtree {
+        Quadtree::with_capacity(boundary, 10u8)
+    }
+
+    pub fn with_capacity(boundary: &Rectangle, capacity: u8) -> Quadtree {
         Quadtree {
             points: Vec::new(),
             boundary: *boundary,
             children: None,
-            capacity: 10u8,
+            capacity,
         }
     }
 
     pub fn insert(&mut self, point: &Point) -> Result<(), ()> {
         if !self.boundary.contains(point) {
+            println!("rejecting {:?} from box {:?}", point, self.boundary);
             return Err(());
         }
 
         if self.points.len() < self.capacity.into() {
+            println!("Inserting {:?} into box {:?}", point, self.boundary);
             self.points.push(*point);
             Ok(())
         } else {
-            let mut sd = QuadtreeSubdivisions::new(&self.boundary);
-            let result = sd
+            println!("Inserting into subdivision {:?}", point);
+            if self.children.is_none() {
+                self.children = Some(QuadtreeSubdivisions::new(&self.boundary, self.capacity));
+            }
+
+            let sd = self.children.as_mut().unwrap();
+            sd
                 .nw
                 .insert(point)
                 .or_else(|_| sd.ne.insert(point))
                 .or_else(|_| sd.sw.insert(point))
-                .or_else(|_| sd.se.insert(point));
-
-            self.children = Some(sd);
-
-            result
+                .or_else(|_| sd.se.insert(point))
         }
     }
 
@@ -135,7 +143,21 @@ mod tests {
         qt.insert(&point).expect("Could not insert point");
         qt.insert(&Point::new(10., 20.))
             .expect("Unable to insert second point");
-        let result = qt.query(&Point::new(1., .1), 2.);
+        let result = qt.query(&Point::new(1., 1.), 2.);
         assert_eq!(result.len(), 0);
+    }
+
+    #[test]
+    fn test_capacity_subdivisions() {
+        let mut qt = Quadtree::with_capacity(&Rectangle::new(10., 10., 10., 10.), 1);
+        qt.insert(&Point::new( 1., 1.)).expect("Cannot insert pt1");
+        qt.insert(&Point::new( 9., 1.)).expect("Cannot insert pt2");
+        qt.insert(&Point::new( 1., 11.)).expect("Cannot insert pt3");
+
+        assert!(qt.children.is_some());
+        assert_eq!(qt.points.len(), 1);
+        println!("{:#?}", qt);
+        assert_eq!(qt.children.as_ref().unwrap().ne.points.len(), 1);
+        assert_eq!(qt.children.as_ref().unwrap().se.points.len(), 1);
     }
 }
