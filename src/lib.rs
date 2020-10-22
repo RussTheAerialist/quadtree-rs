@@ -33,16 +33,13 @@ impl Quadtree {
 
     pub fn insert(&mut self, point: &Point) -> Result<(), ()> {
         if !self.boundary.contains(point) {
-            println!("rejecting {:?} from box {:?}", point, self.boundary);
             return Err(());
         }
 
         if self.points.len() < self.capacity.into() {
-            println!("Inserting {:?} into box {:?}", point, self.boundary);
             self.points.push(*point);
             Ok(())
         } else {
-            println!("Inserting into subdivision {:?}", point);
             if self.children.is_none() {
                 self.children = Some(QuadtreeSubdivisions::new(&self.boundary, self.capacity));
             }
@@ -62,9 +59,21 @@ impl Quadtree {
             return Vec::new();
         }
 
-        let my_points = self.points.iter().filter(|o| o.within(pt, radius));
+        let points = self.query_points(pt, radius);
+         if let Some(c) = &self.children {
+            points
+                .chain(c.sw.query_points(pt, radius))
+                .chain(c.se.query_points(pt, radius))
+                .chain(c.nw.query_points(pt, radius))
+                .chain(c.ne.query_points(pt, radius))
+                .cloned().collect()
+        } else {
+            points.cloned().collect()
+        }
+    }
 
-        my_points.cloned().collect()
+    fn query_points<'a>(&'a self, pt: &'a Point, radius: f32) -> impl Iterator<Item=&'a Point> + 'a {
+        self.points.iter().filter(move |o| o.within(pt, radius))
     }
 }
 
@@ -156,8 +165,29 @@ mod tests {
 
         assert!(qt.children.is_some());
         assert_eq!(qt.points.len(), 1);
-        println!("{:#?}", qt);
         assert_eq!(qt.children.as_ref().unwrap().ne.points.len(), 1);
         assert_eq!(qt.children.as_ref().unwrap().se.points.len(), 1);
+    }
+
+    #[test]
+    fn test_query_with_depth() {
+        let mut qt = Quadtree::with_capacity(&Rectangle::new(10., 10., 10., 10.), 1);
+        qt.insert(&Point::new( 1., 1.)).expect("Cannot insert pt1");
+        qt.insert(&Point::new( 9., 1.)).expect("Cannot insert pt2");
+        qt.insert(&Point::new( 1., 11.)).expect("Cannot insert pt3");
+
+        let result = qt.query(&Point::new(10., 10.), 5.);
+        assert_eq!(result.len(), 3);
+    }
+
+    #[test]
+    fn test_query_no_depth() {
+        let mut qt = Quadtree::with_capacity(&Rectangle::new(10., 10., 10., 10.), 10);
+        qt.insert(&Point::new( 1., 1.)).expect("Cannot insert pt1");
+        qt.insert(&Point::new( 9., 1.)).expect("Cannot insert pt2");
+        qt.insert(&Point::new( 1., 11.)).expect("Cannot insert pt3");
+
+        let result = qt.query(&Point::new(10., 10.), 5.);
+        assert_eq!(result.len(), 3);
     }
 }
