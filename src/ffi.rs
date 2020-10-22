@@ -1,14 +1,14 @@
 use super::*;
 use std::os::raw::{c_int, c_void};
-
-#[repr(C)]
 pub struct UserData {
-    private: [u8; 0],
+    _private: [u8; 0],
 }
 
 #[no_mangle]
-pub extern "C" fn quadtree_new() -> *mut Quadtree {
-    let obj = Quadtree::new(&Rectangle::new(10., 10., 10., 10.));
+pub extern "C" fn quadtree_new(x: f32, y: f32, w: f32, h: f32, capacity: u8) -> *mut Quadtree {
+    let capacity = if capacity == 0 { 10u8 } else { capacity };
+
+    let obj = Quadtree::with_capacity(&Rectangle::new(x, y, w, h), capacity);
     let boxed = Box::new(obj);
 
     Box::into_raw(boxed)
@@ -26,7 +26,7 @@ pub unsafe extern "C" fn quadtree_insert_point(
     qt: *mut Quadtree,
     x: f32,
     y: f32,
-    data: *const UserData,
+    data: *const c_void,
 ) -> c_int {
     // TODO: Make this an enum for return error
     if qt.is_null() {
@@ -34,12 +34,18 @@ pub unsafe extern "C" fn quadtree_insert_point(
     }
 
     let qt = &mut *qt;
-    qt.insert(&Point { x, y, data }).map(|_| 0).unwrap_or(-2)
+    qt.insert(&Point { x, y, data: data as *const UserData }).map(|_| 0).unwrap_or(-2)
 }
 
 #[no_mangle]
 /// # Safety
-pub unsafe extern "C" fn quadtree_query(qt: *const Quadtree, x: f32, y: f32, r: f32, count: &mut usize) -> *const c_void {
+pub unsafe extern "C" fn quadtree_query(
+    qt: *const Quadtree,
+    x: f32,
+    y: f32,
+    r: f32,
+    count: &mut usize,
+) -> *const c_void {
     if qt.is_null() {
         *count = 0;
         return std::ptr::null_mut();
@@ -47,10 +53,8 @@ pub unsafe extern "C" fn quadtree_query(qt: *const Quadtree, x: f32, y: f32, r: 
 
     let qt = &*qt;
     let point = Point::new(x, y);
-    let mut points : Vec<*const UserData> = qt.query(&point, r)
-        .into_iter()
-        .map(|p| p.data)
-        .collect();
+    let mut points: Vec<*const UserData> =
+        qt.query(&point, r).into_iter().map(|p| p.data).collect();
 
     points.shrink_to_fit();
     let ptr = points.as_ptr();
@@ -67,7 +71,7 @@ mod tests {
 
     #[test]
     fn test_c_api() {
-        let qt = quadtree_new();
+        let qt = quadtree_new(10., 10., 10., 10., 10);
         assert!(!qt.is_null());
 
         let result = unsafe { quadtree_insert_point(qt, 1.0, 2.0, std::ptr::null()) };

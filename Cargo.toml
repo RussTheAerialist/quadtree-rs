@@ -6,6 +6,7 @@ edition = "2018"
 description = "A rust implementation of a quadtree with a C api"
 license = "MIT"
 repository = "https://github.com/RussTheAerialist/quadtree-rs"
+build = "build.rs"
 
 [lib]
 crate-type = [ "staticlib" ]

@@ -8,7 +8,6 @@ pub mod subdivision;
 use ffi::UserData;
 use rectangle::Rectangle;
 use subdivision::QuadtreeSubdivisions;
-#[repr(C)]
 #[derive(Debug)]
 pub struct Quadtree {
     pub points: Vec<Point>,
@@ -45,8 +44,7 @@ impl Quadtree {
             }
 
             let sd = self.children.as_mut().unwrap();
-            sd
-                .nw
+            sd.nw
                 .insert(point)
                 .or_else(|_| sd.ne.insert(point))
                 .or_else(|_| sd.sw.insert(point))
@@ -60,19 +58,24 @@ impl Quadtree {
         }
 
         let points = self.query_points(pt, radius);
-         if let Some(c) = &self.children {
+        if let Some(c) = &self.children {
             points
                 .chain(c.sw.query_points(pt, radius))
                 .chain(c.se.query_points(pt, radius))
                 .chain(c.nw.query_points(pt, radius))
                 .chain(c.ne.query_points(pt, radius))
-                .cloned().collect()
+                .cloned()
+                .collect()
         } else {
             points.cloned().collect()
         }
     }
 
-    fn query_points<'a>(&'a self, pt: &'a Point, radius: f32) -> impl Iterator<Item=&'a Point> + 'a {
+    fn query_points<'a>(
+        &'a self,
+        pt: &'a Point,
+        radius: f32,
+    ) -> impl Iterator<Item = &'a Point> + 'a {
         self.points.iter().filter(move |o| o.within(pt, radius))
     }
 }
@@ -98,9 +101,15 @@ impl Point {
     pub fn within(&self, pt: &Point, radius: f32) -> bool {
         let (dx, dy) = ((self.x - pt.x).abs(), (self.y - pt.y).abs());
 
-        if dx + dy <= radius.powi(2) { return true; }
-        if dx > radius { return false; }
-        if dx > radius { return false; }
+        if dx + dy <= radius.powi(2) {
+            return true;
+        }
+        if dx > radius {
+            return false;
+        }
+        if dx > radius {
+            return false;
+        }
 
         dx.powi(2) + dy.powi(2) <= radius.powi(2)
     }
@@ -159,9 +168,9 @@ mod tests {
     #[test]
     fn test_capacity_subdivisions() {
         let mut qt = Quadtree::with_capacity(&Rectangle::new(10., 10., 10., 10.), 1);
-        qt.insert(&Point::new( 1., 1.)).expect("Cannot insert pt1");
-        qt.insert(&Point::new( 9., 1.)).expect("Cannot insert pt2");
-        qt.insert(&Point::new( 1., 11.)).expect("Cannot insert pt3");
+        qt.insert(&Point::new(1., 1.)).expect("Cannot insert pt1");
+        qt.insert(&Point::new(9., 1.)).expect("Cannot insert pt2");
+        qt.insert(&Point::new(1., 11.)).expect("Cannot insert pt3");
 
         assert!(qt.children.is_some());
         assert_eq!(qt.points.len(), 1);
@@ -172,9 +181,9 @@ mod tests {
     #[test]
     fn test_query_with_depth() {
         let mut qt = Quadtree::with_capacity(&Rectangle::new(10., 10., 10., 10.), 1);
-        qt.insert(&Point::new( 1., 1.)).expect("Cannot insert pt1");
-        qt.insert(&Point::new( 9., 1.)).expect("Cannot insert pt2");
-        qt.insert(&Point::new( 1., 11.)).expect("Cannot insert pt3");
+        qt.insert(&Point::new(1., 1.)).expect("Cannot insert pt1");
+        qt.insert(&Point::new(9., 1.)).expect("Cannot insert pt2");
+        qt.insert(&Point::new(1., 11.)).expect("Cannot insert pt3");
 
         let result = qt.query(&Point::new(10., 10.), 5.);
         assert_eq!(result.len(), 3);
@@ -183,9 +192,9 @@ mod tests {
     #[test]
     fn test_query_no_depth() {
         let mut qt = Quadtree::with_capacity(&Rectangle::new(10., 10., 10., 10.), 10);
-        qt.insert(&Point::new( 1., 1.)).expect("Cannot insert pt1");
-        qt.insert(&Point::new( 9., 1.)).expect("Cannot insert pt2");
-        qt.insert(&Point::new( 1., 11.)).expect("Cannot insert pt3");
+        qt.insert(&Point::new(1., 1.)).expect("Cannot insert pt1");
+        qt.insert(&Point::new(9., 1.)).expect("Cannot insert pt2");
+        qt.insert(&Point::new(1., 11.)).expect("Cannot insert pt3");
 
         let result = qt.query(&Point::new(10., 10.), 5.);
         assert_eq!(result.len(), 3);

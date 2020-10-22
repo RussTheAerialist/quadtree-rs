@@ -1,4 +1,4 @@
-#include "../quadtree.h"
+#include "../target/quadtree.h"
 #include <iostream>
 
 using namespace std;
@@ -7,7 +7,7 @@ using namespace std;
 void main() {
 	using namespace quadtree;
 
-	Quadtree* qt = quadtree_new();
+	Quadtree* qt = quadtree_new(10., 10., 10., 10., 0.);
 	if(qt == nullptr) {
 		cout << "Could not allocate quadtree" << endl;
 		return;
