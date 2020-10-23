@@ -76,7 +76,7 @@ impl Quadtree {
         pt: &'a Point,
         radius: f32,
     ) -> impl Iterator<Item = &'a Point> + 'a {
-        self.points.iter().filter(move |o| o.within(pt, radius))
+        self.points.iter().filter(move |o| (o.x != pt.x || o.y != pt.y) && o.within(pt, radius))
     }
 }
 

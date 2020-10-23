@@ -13,17 +13,21 @@ void main() {
 		return;
 	}
 
-	int* value = new int;
-	*value = 42;
-	int* value2 = new int;
-	*value2 = 27;
+	int value = 42;
+	int value2 = 27;
+	int value3 = -1;
 
-	if (quadtree_insert_point(qt, 1., 1., value)) {
+	if (quadtree_insert_point(qt, 1., 1., &value)) {
 		cout << "Could not insert the point" << endl;
 		return;
 	}
 
-		if (quadtree_insert_point(qt, 2., 1., value2)) {
+		if (quadtree_insert_point(qt, 2., 1., &value2)) {
+		cout << "Could not insert the point" << endl;
+		return;
+	}
+
+			if (quadtree_insert_point(qt, 1., 2., &value3)) {
 		cout << "Could not insert the point" << endl;
 		return;
 	}
@@ -36,7 +40,4 @@ void main() {
 
 	quadtree_free(qt);
 	qt = nullptr;
-
-	delete value;
-	delete value2;
 }
